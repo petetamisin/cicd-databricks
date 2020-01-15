@@ -1,0 +1,7 @@
+.idea
+target/
+*.iml
+.DS_Store
+project/
+build.sbt
+.Rhistory

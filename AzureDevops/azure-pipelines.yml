@@ -1,0 +1,106 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- release
+
+pool:
+  name: Hosted Ubuntu 1604
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Use Python 3.5'
+  inputs:
+    versionSpec: 3.5
+
+- script: |
+    pip install pytest requests setuptools wheel
+    pip install -U databricks-connect==5.5.*
+  displayName: 'Load Python Dependencies'
+
+- script: |
+    echo "y
+    $(WORKSPACE-REGION-URL)
+    $(CSE-DEVELOP-PAT) 
+    $(EXISTING-CLUSTER-ID)
+    $(WORKSPACE-ORG-ID)
+    15001" | databricks-connect configure
+  displayName: 'Configure DBConnect'
+
+#- script: "databricks-connect test"
+#  displayName: 'DBConnect test install'
+
+- script: |
+    sudo wget www.scala-lang.org/files/archive/scala-2.10.4.deb
+    sudo dpkg -i scala-2.10.4.deb
+    # in case of unmet libjansi-java dependency fire:
+    # sudo apt-get install -f
+    sudo apt-get install curl
+    wget https://dl.bintray.com/sbt/debian/sbt-0.13.8.deb
+    sudo dpkg -i sbt-0.13.8.deb
+  displayName: 'Install SBT'
+
+- checkout: self
+  persistCredentials: true
+  clean: true
+
+- script: git checkout release
+  displayName: 'Get Latest Branch'
+
+- script: |
+    cd $(Build.Repository.LocalPath)/libraries/scala/DemoProjects
+    sbt compile test package
+    ls $(Build.Repository.LocalPath)/libraries/scala/DemoProjects/target/scala-2.10
+  displayName: 'Compile, Test & Package Scala'
+
+- script: |
+    python -m pytest --junit-xml=$(Build.Repository.LocalPath)/logs/TEST-LOCAL.xml $(Build.Repository.LocalPath)/libraries/python/dbxdemo/test*.py || true
+    ls logs
+  displayName: 'Run Python Unit Tests for library code'
+
+- task: PythonScript@0
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: '$(Build.Repository.LocalPath)/cicd-scripts/executenotebook.py'
+    arguments: '--shard $(WORKSPACE-REGION-URL) --token $(CSE-DEVELOP-PAT) --cluster $(EXISTING-CLUSTER-ID) --localpath $(Build.Repository.LocalPath)/notebooks/Tests  --workspacepath /Shared/notebooks/Tests --outfilepath $(Build.Repository.LocalPath)/logs/json'
+  displayName: 'Test Notebook Completes Successfully'  
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: '**/TEST-*.xml'
+    failTaskOnFailedTests: true
+    publishRunAttachments: true
+
+- script: |
+    cd $(Build.Repository.LocalPath)/libraries/python/dbxdemo
+    python3 setup.py sdist bdist_wheel
+    ls dist/
+  displayName: 'Build Python Wheel for Libs'
+
+- script: |
+    git diff --name-only --diff-filter=AMR HEAD^1 HEAD | xargs -I '{}' cp --parents -r '{}' $(Build.BinariesDirectory)
+    
+    mkdir -p $(Build.BinariesDirectory)/libraries/scala/libs
+    cp $(Build.Repository.LocalPath)/libraries/scala/DemoProjects/target/scala-2.10/*.jar $(Build.BinariesDirectory)/libraries/scala/libs
+    
+    mkdir -p $(Build.BinariesDirectory)/libraries/python/libs
+    cp $(Build.Repository.LocalPath)/libraries/python/dbxdemo/dist/*.* $(Build.BinariesDirectory)/libraries/python/libs
+     
+    pwd $(Build.BinariesDirectory)
+    ls $(Build.BinariesDirectory)
+  displayName: 'Get Changes'  
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    ArtifactName: 'drop'
+
