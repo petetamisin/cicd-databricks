@@ -134,7 +134,7 @@ node {
         
     }
     stage('Send Notifications') {
-        sh """python3 ${GITREPO}/Automation/Deployments/notify.py "--slackurl=${SLACKURL}\
+        sh """python3 ${SCRIPTPATH}/notify.py "--slackurl=${SLACKURL}\
                             --message='${env.JOB_NAME}:Build-${env.BUILD_NUMBER}'\
                             --channel=${SLACKCHANNEL}\
                             --outputpath=${OUTFILEPATH}
