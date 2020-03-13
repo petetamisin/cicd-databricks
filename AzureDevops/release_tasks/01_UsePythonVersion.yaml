@@ -1,0 +1,5 @@
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Use Python 3.7'
+  inputs:
+    versionSpec: 3.7

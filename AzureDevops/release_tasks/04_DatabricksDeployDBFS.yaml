@@ -1,0 +1,9 @@
+#Your build pipeline references a secret variable named ‘CSE-QA-PAT’. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab, and then select the option to make it secret. See https://go.microsoft.com/fwlink/?linkid=865972
+
+steps:
+- task: DataThirstLtd.databricksDeployScriptsTasks.databricksDeployScriptsTask.databricksDeployScripts@0
+  displayName: 'Databricks Notebooks Deployment'
+  inputs:
+    bearerToken: '$(CSE-QA-PAT)'
+    region: eastus
+    localPath: '$(agent.builddirectory)/notebooks'

@@ -1,0 +1,5 @@
+steps:
+- script: |
+   python -m pytest --junit-xml=$(agent.builddirectory)\logs\xml\TEST-notebookout.xml --jsonpath=$(agent.builddirectory)\logs\json\ $(agent.builddirectory)\cicd-scripts\evaluatenotebookruns.py || true
+   
+  displayName: 'Generate Test Results'

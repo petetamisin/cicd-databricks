@@ -1,0 +1,7 @@
+steps:
+- script: |
+   ls -LR $(agent.builddirectory)
+   mkdir $(agent.builddirectory)\logs\json
+   mkdir $(agent.builddirectory)\logs\xml
+   pip install pytest requests
+  displayName: 'Configure Test Environment'

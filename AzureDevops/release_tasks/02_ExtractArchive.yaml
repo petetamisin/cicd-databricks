@@ -1,0 +1,5 @@
+steps:
+- task: ExtractFiles@1
+  displayName: 'Extract Archive'
+  inputs:
+    destinationFolder: '$(agent.builddirectory)'

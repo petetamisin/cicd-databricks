@@ -1,0 +1,11 @@
+#Your build pipeline references a secret variable named ‘CSE-QA-PAT’. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab, and then select the option to make it secret. See https://go.microsoft.com/fwlink/?linkid=865972
+#Your build pipeline references a secret variable named ‘EXISTING-CLUSTER-ID’. Create or edit the build pipeline for this YAML file, define the variable on the Variables tab, and then select the option to make it secret. See https://go.microsoft.com/fwlink/?linkid=865972
+variables:
+  CSE-QA-WORKSPACE: 'https://eastus.azuredatabricks.net'
+
+steps:
+- task: PythonScript@0
+  displayName: 'Execute Test Notebooks on Cluster'
+  inputs:
+    scriptPath: '$(agent.builddirectory)/cicd-scripts/executeNotebook.py'
+    arguments: '--shard $(CSE-QA-WORKSPACE) --token $(CSE-QA-PAT) --cluster $(EXISTING-CLUSTER-ID) --localpath $(agent.builddirectory)/notebooks/Tests  --workspacepath /Shared/notebooks/Tests --outfilepath $(agent.builddirectory)/logs/json'
